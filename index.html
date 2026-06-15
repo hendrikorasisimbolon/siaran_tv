@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web TV Streaming - Premium IPTV</title>
+    <title>DEV TV - Personal IPTV Client</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
@@ -21,118 +21,300 @@
         ::-webkit-scrollbar-thumb:hover { background: #475569; }
 
         .glass { background: rgba(17, 24, 39, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .glass-card { background: rgba(30, 41, 59, 0.4); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.05); transition: all 0.3s ease; }
-        .glass-card:hover { transform: translateY(-3px); border-color: #3b82f6; box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.3); background: rgba(30, 41, 59, 0.8); cursor: pointer; }
+        .glass-card { background: rgba(30, 41, 59, 0.25); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.05); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .glass-card:hover { transform: translateY(-3px); border-color: #3b82f6; box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.3); background: rgba(30, 41, 59, 0.6); cursor: pointer; }
         
         .loader { border: 2px solid #334155; border-top: 2px solid #3b82f6; border-radius: 50%; width: 14px; height: 14px; animation: spin 1s linear infinite; display: inline-block; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        .active-cat { background: linear-gradient(90deg, rgba(59,130,246,0.2) 0%, transparent 100%); border-left: 3px solid #3b82f6; color: white; font-weight: 600; }
+        .active-cat { background: linear-gradient(90deg, rgba(59,130,246,0.15) 0%, transparent 100%); border-left: 3px solid #3b82f6; color: white; font-weight: 600; }
         
         /* Toast Animation */
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         .toast-enter { animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+
+        /* Marquee Animation */
+        @keyframes marquee {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+        .animate-marquee {
+            animation: marquee 28s linear infinite;
+        }
+        .animate-marquee:hover {
+            animation-play-state: paused;
+        }
+
+        /* Collapsed Sidebar Styles */
+        .sidebar-collapsed {
+            width: 80px !important;
+        }
+        .sidebar-collapsed .logo-text,
+        .sidebar-collapsed .category-label,
+        .sidebar-collapsed .sidebar-footer,
+        .sidebar-collapsed button span {
+            display: none !important;
+        }
+        .sidebar-collapsed .logo-container {
+            justify-content: center;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
+        .sidebar-collapsed button {
+            justify-content: center;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
+        .sidebar-collapsed button i {
+            margin-right: 0 !important;
+            font-size: 1.25rem;
+        }
+
+        /* Theater Mode Styles */
+        body.theater-mode aside {
+            width: 0 !important;
+            border-right: none !important;
+            overflow: hidden;
+        }
+        body.theater-mode #player-container-wrapper {
+            max-w-7xl: !important;
+            transition: all 0.3s ease;
+        }
     </style>
 </head>
-<body class="h-screen flex overflow-hidden selection:bg-blue-500 selection:text-white">
+<body class="h-screen flex flex-col overflow-hidden selection:bg-blue-500 selection:text-white">
 
-    <!-- Sidebar -->
-    <aside class="w-64 flex-shrink-0 bg-[#0f172a] border-r border-gray-800 flex-col hidden md:flex transition-all duration-300 z-20 shadow-2xl">
-        <div class="h-16 flex items-center px-6 border-b border-gray-800 bg-[#0b0f19]">
-            <i class="ri-tv-2-line text-blue-500 text-2xl mr-2"></i>
-            <h1 class="text-xl font-bold tracking-wide text-white">TV<span class="text-blue-500">Ku</span></h1>
+    <!-- Marquee Banner (Proyek Iseng) -->
+    <div class="bg-amber-600/90 text-white text-[11px] sm:text-xs py-2 px-4 border-b border-amber-500 overflow-hidden relative z-30 flex items-center shadow-lg">
+        <i class="ri-alert-line text-sm sm:text-base mr-2 animate-pulse flex-shrink-0"></i>
+        <div class="w-full overflow-hidden whitespace-nowrap">
+             <div class="inline-block animate-marquee uppercase tracking-wider font-semibold">
+                  ⚠️ PEMBERITAHUAN: Project DEV TV ini hanyalah project iseng/edukasi personal, BUKAN untuk dipublikasikan secara umum atau dikomersialkan. Seluruh stream berasal dari internet publik.
+             </div>
         </div>
-        <div class="p-4 flex-1 overflow-y-auto">
-            <h2 class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 px-3">Kategori</h2>
-            <ul id="category-list" class="space-y-1">
-                <!-- Categories injected here -->
-            </ul>
-        </div>
-    </aside>
+    </div>
 
-    <!-- Main Content -->
-    <main class="flex-1 flex flex-col h-full relative bg-[#0b0f19] overflow-hidden">
-        
-        <!-- Header -->
-        <header class="h-16 glass flex items-center justify-between px-4 sm:px-6 z-10 w-full sticky top-0">
-            <div class="flex items-center md:hidden">
-                 <i class="ri-tv-2-line text-blue-500 text-xl mr-2"></i>
-                 <h1 class="text-lg font-bold text-white">TV<span class="text-blue-500">Ku</span></h1>
+    <!-- Main Application Wrapper -->
+    <div class="flex-1 flex overflow-hidden relative">
+        <!-- Sidebar -->
+        <aside class="w-64 flex-shrink-0 bg-[#0f172a] border-r border-gray-800/60 flex-col hidden md:flex transition-all duration-300 z-20 shadow-2xl">
+            <div class="h-16 flex items-center px-6 border-b border-gray-800 bg-[#0b0f19] logo-container">
+                <i class="ri-tv-2-line text-blue-500 text-2xl mr-2 flex-shrink-0"></i>
+                <h1 class="text-xl font-bold tracking-wide text-white logo-text">DEV<span class="text-blue-500"> TV</span></h1>
             </div>
-            
-            <!-- Search Bar -->
-            <div class="flex-1 max-w-xl mx-4 flex items-center">
-                <div class="relative w-full group">
-                    <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors"></i>
-                    <input type="text" id="search-input" placeholder="Cari saluran TV..." class="w-full bg-[#1e293b] text-sm text-white rounded-full pl-10 pr-4 py-2 border border-gray-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder-gray-500">
-                </div>
+            <div class="p-4 flex-1 overflow-y-auto">
+                <h2 class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 px-3 category-label">Kategori</h2>
+                <ul id="category-list" class="space-y-1">
+                    <!-- Categories injected here -->
+                </ul>
             </div>
-
-            <!-- Stats -->
-            <div class="flex items-center space-x-3 hidden sm:flex">
-                <div class="text-xs text-gray-400 flex items-center bg-[#1e293b] px-3 py-1.5 rounded-full border border-gray-800">
-                    <i class="ri-broadcast-line text-green-400 mr-1.5 animate-pulse"></i>
-                    <span id="stats">Memuat...</span>
-                </div>
-                <button onclick="checkAllStatusInView(true)" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1.5 rounded-full transition-colors flex items-center shadow-lg shadow-blue-500/20">
-                    <i class="ri-refresh-line mr-1"></i> Cek Status
+            <!-- Sidebar Footer -->
+            <div class="p-4 border-t border-gray-800/60 bg-[#0b0f19]/30 text-center sidebar-footer">
+                <button onclick="openDisclaimerModal()" class="text-[11px] text-gray-500 hover:text-blue-400 hover:underline transition-colors flex items-center justify-center mx-auto">
+                    <i class="ri-shield-user-line mr-1"></i> Disclaimer & DMCA
                 </button>
             </div>
-        </header>
+        </aside>
 
-        <!-- Scrollable Content Area -->
-        <div class="flex-1 overflow-y-auto p-4 sm:p-6 pb-24" id="main-scroll">
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col h-full relative bg-[#0b0f19] overflow-hidden">
             
-            <!-- Video Player -->
-            <div class="w-full max-w-5xl mx-auto mb-8 relative rounded-xl overflow-hidden bg-black shadow-2xl ring-1 ring-gray-800 aspect-video group">
-                <video id="video-player" class="w-full h-full object-contain" controls autoplay playsinline></video>
-                
-                <div id="player-overlay" class="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-t from-[#0b0f19] to-black/60 backdrop-blur-sm p-6 text-center transition-all duration-300 z-10">
-                    <div class="w-16 h-16 sm:w-20 sm:h-20 mb-4 rounded-full bg-gray-800/50 flex items-center justify-center border border-gray-700 shadow-lg backdrop-blur-md">
-                        <i class="ri-play-circle-line text-4xl text-gray-400"></i>
+            <!-- Header -->
+            <header class="h-16 glass flex items-center justify-between px-4 sm:px-6 z-10 w-full sticky top-0">
+                <div class="flex items-center">
+                    <!-- Desktop Sidebar Toggle Button -->
+                    <button id="sidebar-toggle" class="hidden md:flex text-gray-400 hover:text-white mr-4 p-2 rounded-lg bg-[#1e293b]/60 border border-gray-700/50 hover:bg-[#1e293b] transition-all">
+                        <i id="sidebar-toggle-icon" class="ri-menu-fold-line text-lg"></i>
+                    </button>
+                    
+                    <!-- Mobile Brand -->
+                    <div class="flex items-center md:hidden">
+                         <i class="ri-tv-2-line text-blue-500 text-xl mr-2"></i>
+                         <h1 class="text-lg font-bold text-white">DEV<span class="text-blue-500"> TV</span></h1>
                     </div>
-                    <h2 class="text-xl sm:text-2xl font-bold text-white mb-2 tracking-tight" id="now-playing-title">Pilih Saluran TV</h2>
-                    <p class="text-gray-400 text-xs sm:text-sm max-w-md" id="now-playing-status">Silakan pilih saluran dari daftar di bawah ini untuk mulai menonton.</p>
                 </div>
                 
-                <div id="mini-info" class="absolute top-4 left-4 right-4 flex justify-between items-start opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10 hidden">
-                     <div class="bg-black/60 backdrop-blur px-3 py-1.5 rounded-lg border border-white/10 flex items-center shadow-lg">
-                         <img id="mini-logo" src="" class="h-5 mr-2 object-contain hidden">
-                         <span class="text-white text-sm font-medium drop-shadow-md" id="mini-title"></span>
+                <!-- Search Bar -->
+                <div class="flex-1 max-w-xl mx-4 flex items-center">
+                    <div class="relative w-full group">
+                        <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors"></i>
+                        <input type="text" id="search-input" placeholder="Cari saluran TV..." class="w-full bg-[#1e293b] text-sm text-white rounded-full pl-10 pr-4 py-2 border border-gray-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder-gray-500">
+                    </div>
+                </div>
+
+                <!-- Action Controls (Stats & Buttons) -->
+                <div class="flex items-center space-x-2 sm:space-x-3">
+                    <div class="text-[10px] sm:text-xs text-gray-400 items-center bg-[#1e293b] px-3 py-1.5 rounded-full border border-gray-800 hidden sm:flex">
+                        <i class="ri-broadcast-line text-green-400 mr-1.5 animate-pulse"></i>
+                        <span id="stats">Memuat...</span>
+                    </div>
+                    <!-- Settings Button -->
+                    <button onclick="openSettingsModal()" class="bg-[#1e293b] hover:bg-gray-800 text-gray-300 text-[11px] sm:text-xs p-2 rounded-full border border-gray-700 transition-colors flex items-center justify-center shadow-lg w-8 h-8" title="Pengaturan Proxy">
+                        <i class="ri-settings-3-line text-base"></i>
+                    </button>
+                    <!-- Theater Mode Toggle -->
+                    <button onclick="toggleTheaterMode()" class="bg-[#1e293b] hover:bg-gray-800 text-gray-300 text-[11px] sm:text-xs px-3 py-1.5 rounded-full border border-gray-700 transition-colors flex items-center shadow-lg">
+                        <i class="ri-movie-line mr-1"></i> <span class="hidden sm:inline">Mode Bioskop</span>
+                    </button>
+                    <button onclick="checkAllStatusInView(true)" class="bg-blue-600 hover:bg-blue-500 text-white text-[11px] sm:text-xs px-3 py-1.5 rounded-full transition-colors flex items-center shadow-lg shadow-blue-500/20">
+                        <i class="ri-refresh-line mr-1"></i> Cek Status
+                    </button>
+                </div>
+            </header>
+
+            <!-- Scrollable Content Area -->
+            <div class="flex-1 overflow-y-auto p-4 sm:p-6 pb-24" id="main-scroll">
+                
+                <!-- Video Player Container with Ambient Glow -->
+                <div id="player-container-wrapper" class="w-full max-w-5xl mx-auto mb-8 relative rounded-xl bg-black shadow-2xl ring-1 ring-gray-800 aspect-video group transition-all duration-300">
+                    <!-- Ambient Glow Effect -->
+                    <div class="absolute -inset-1.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-2xl blur-xl opacity-20 group-hover:opacity-30 transition-opacity duration-500 pointer-events-none"></div>
+                    
+                    <div class="w-full h-full relative rounded-xl overflow-hidden bg-black z-10">
+                        <video id="video-player" class="w-full h-full object-contain" controls autoplay playsinline></video>
+                        
+                        <div id="player-overlay" class="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-t from-[#0b0f19] to-black/60 backdrop-blur-sm p-6 text-center transition-all duration-300 z-10">
+                            <div class="w-16 h-16 sm:w-20 sm:h-20 mb-4 rounded-full bg-gray-800/50 flex items-center justify-center border border-gray-700 shadow-lg backdrop-blur-md">
+                                <i class="ri-play-circle-line text-4xl text-gray-400"></i>
+                            </div>
+                            <h2 class="text-xl sm:text-2xl font-bold text-white mb-2 tracking-tight" id="now-playing-title">Pilih Saluran TV</h2>
+                            <p class="text-gray-400 text-xs sm:text-sm max-w-md" id="now-playing-status">Silakan pilih saluran dari daftar di bawah ini untuk mulai menonton.</p>
+                        </div>
+                        
+                        <div id="mini-info" class="absolute top-4 left-4 right-4 flex justify-between items-start opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10 hidden">
+                             <div class="bg-black/60 backdrop-blur px-3 py-1.5 rounded-lg border border-white/10 flex items-center shadow-lg">
+                                 <img id="mini-logo" src="" class="h-5 mr-2 object-contain hidden">
+                                 <span class="text-white text-sm font-medium drop-shadow-md" id="mini-title"></span>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mobile Categories (Horizontal) -->
+                <div class="md:hidden flex space-x-2 overflow-x-auto pb-4 mb-4 scrollbar-hide" id="mobile-category-list"></div>
+
+                <!-- Category Title -->
+                <div class="flex justify-between items-end mb-6 border-b border-gray-800 pb-2">
+                    <div>
+                        <h2 class="text-2xl font-bold text-white tracking-tight flex items-center" id="current-category-title">
+                            <i class="ri-grid-fill text-blue-500 mr-2 text-xl"></i> Semua Saluran
+                        </h2>
+                        <p class="text-sm text-gray-500 mt-1" id="channel-count-text"></p>
+                    </div>
+                    <div class="flex space-x-2 sm:hidden">
+                        <button onclick="toggleTheaterMode()" class="bg-[#1e293b] border border-gray-700 text-gray-300 text-xs px-3 py-1.5 rounded-lg transition-colors flex items-center">
+                            <i class="ri-movie-line mr-1"></i> Mode Bioskop
+                        </button>
+                        <button onclick="checkAllStatusInView(true)" class="bg-[#1e293b] border border-gray-700 hover:bg-gray-800 text-gray-300 text-xs px-3 py-1.5 rounded-lg transition-colors flex items-center">
+                            <i class="ri-refresh-line mr-1"></i> Cek
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Channel Grid -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-5" id="channel-grid"></div>
+                
+                <!-- Empty State -->
+                <div id="empty-state" class="hidden flex-col items-center justify-center py-16 text-center">
+                     <div class="w-20 h-20 bg-gray-800/50 rounded-full flex items-center justify-center mb-4">
+                         <i class="ri-search-eye-line text-4xl text-gray-500"></i>
                      </div>
+                     <h3 class="text-lg font-semibold text-gray-300">Saluran tidak ditemukan</h3>
+                     <p class="text-gray-500 text-sm mt-1">Coba kata kunci pencarian yang lain.</p>
                 </div>
+
+                <!-- Footer Informasi & Hak Cipta -->
+                <div class="text-center py-6 border-t border-gray-800/40 mt-12 text-xs text-gray-600">
+                    &copy; 2026 DEV TV. Dibuat untuk tujuan edukasi & hobi personal. 
+                    <button onclick="openDisclaimerModal()" class="text-blue-500/80 hover:text-blue-400 hover:underline ml-1">Disclaimer & Kebijakan Hak Cipta (DMCA)</button>
+                </div>
+
             </div>
+        </main>
+    </div>
 
-            <!-- Mobile Categories (Horizontal) -->
-            <div class="md:hidden flex space-x-2 overflow-x-auto pb-4 mb-4 scrollbar-hide" id="mobile-category-list"></div>
-
-            <!-- Category Title -->
-            <div class="flex justify-between items-end mb-6 border-b border-gray-800 pb-2">
-                <div>
-                    <h2 class="text-2xl font-bold text-white tracking-tight flex items-center" id="current-category-title">
-                        <i class="ri-grid-fill text-blue-500 mr-2 text-xl"></i> Semua Saluran
-                    </h2>
-                    <p class="text-sm text-gray-500 mt-1" id="channel-count-text"></p>
+    <!-- Modal Settings -->
+    <div id="settings-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-300">
+        <div class="bg-[#0f172a]/95 border border-gray-800 rounded-2xl max-w-md w-full overflow-hidden shadow-2xl transform scale-95 transition-all duration-300">
+            <div class="p-5 border-b border-gray-800 flex items-center justify-between bg-[#0b0f19]">
+                <div class="flex items-center text-blue-400 font-bold">
+                    <i class="ri-settings-3-line text-xl mr-2"></i>
+                    <span class="text-sm tracking-wide uppercase">Pengaturan Player</span>
                 </div>
-                <button onclick="checkAllStatusInView(true)" class="sm:hidden bg-[#1e293b] border border-gray-700 hover:bg-gray-800 text-gray-300 text-xs px-3 py-1.5 rounded-lg transition-colors flex items-center">
-                    <i class="ri-refresh-line mr-1"></i> Cek
+                <button onclick="closeSettingsModal()" class="text-gray-500 hover:text-white transition-colors">
+                    <i class="ri-close-line text-xl"></i>
                 </button>
             </div>
-            
-            <!-- Channel Grid -->
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-5" id="channel-grid"></div>
-            
-            <!-- Empty State -->
-            <div id="empty-state" class="hidden flex-col items-center justify-center py-16 text-center">
-                 <div class="w-20 h-20 bg-gray-800/50 rounded-full flex items-center justify-center mb-4">
-                     <i class="ri-search-eye-line text-4xl text-gray-500"></i>
-                 </div>
-                 <h3 class="text-lg font-semibold text-gray-300">Saluran tidak ditemukan</h3>
-                 <p class="text-gray-500 text-sm mt-1">Coba kata kunci pencarian yang lain.</p>
+            <div class="p-6 space-y-4 text-sm text-gray-400">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">CORS Proxy URL</label>
+                    <p class="text-[11px] text-gray-500 mb-2 leading-relaxed">
+                        Gunakan proxy untuk menembus proteksi CORS browser pada saluran eksternal. Biarkan kosong untuk menonaktifkan.
+                    </p>
+                    <input type="text" id="proxy-input" placeholder="Contoh: https://api.allorigins.win/raw?url=" class="w-full bg-[#1e293b] text-sm text-white rounded-lg px-3 py-2 border border-gray-700 focus:outline-none focus:border-blue-500 transition-all placeholder-gray-600">
+                </div>
+                
+                <div class="pt-2">
+                    <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Proxy Populer (Referensi)</label>
+                    <div class="space-y-1.5">
+                        <button onclick="setQuickProxy('https://cors-anywhere.herokuapp.com/')" class="w-full text-left text-xs bg-[#1e293b]/50 hover:bg-[#1e293b] text-gray-300 p-2 rounded border border-gray-800 transition-all truncate">
+                            cors-anywhere.herokuapp.com (Butuh aktivasi demo)
+                        </button>
+                        <button onclick="setQuickProxy('https://api.allorigins.win/raw?url=')" class="w-full text-left text-xs bg-[#1e293b]/50 hover:bg-[#1e293b] text-gray-300 p-2 rounded border border-gray-800 transition-all truncate">
+                            api.allorigins.win/raw?url= (Tanpa batas/aktivasi)
+                        </button>
+                    </div>
+                </div>
             </div>
-
+            <div class="p-4 bg-[#0b0f19] border-t border-gray-800 flex justify-end space-x-2">
+                <button onclick="closeSettingsModal()" class="text-gray-400 hover:text-white text-xs px-4 py-2 transition-colors">
+                    Batal
+                </button>
+                <button onclick="saveSettings()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-4 py-2 rounded-lg font-semibold transition-colors">
+                    Simpan Perubahan
+                </button>
+            </div>
         </div>
-    </main>
+    </div>
+
+    <!-- Modal Disclaimer -->
+    <div id="disclaimer-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-300">
+        <div class="bg-[#0f172a]/95 border border-gray-800 rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl transform scale-95 transition-all duration-300">
+            <div class="p-6 border-b border-gray-800 flex items-center justify-between bg-[#0b0f19]">
+                <div class="flex items-center text-red-400 font-bold">
+                    <i class="ri-shield-check-line text-2xl mr-2"></i>
+                    <span class="text-lg tracking-wide uppercase">Disclaimer & DMCA</span>
+                </div>
+                <button onclick="closeDisclaimerModal()" class="text-gray-500 hover:text-white transition-colors">
+                    <i class="ri-close-line text-2xl"></i>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto max-h-[60vh] text-sm text-gray-400 space-y-4 leading-relaxed">
+                <p class="font-semibold text-white">PENTING UNTUK DIKETAHUI:</p>
+                <p>
+                    <strong>DEV TV</strong> adalah sebuah proyek eksperimental, hobi, dan edukasi personal. Platform ini **BUKAN** merupakan produk komersial, tidak dipublikasikan secara massal, dan tidak menghasilkan pendapatan apa pun.
+                </p>
+                <hr class="border-gray-800">
+                <p class="text-xs">
+                    1. **Tidak Ada Hosting Konten**: Kami sama sekali tidak mengunggah, menyimpan (host), memancarkan ulang, atau memodifikasi file media streaming apa pun. Seluruh saluran TV yang terdaftar bersumber dari playlist M3U publik di repositori terbuka internet (seperti GitHub).
+                </p>
+                <p class="text-xs">
+                    2. **Tautan Pihak Ketiga**: Tautan video streaming langsung mengarah pada server eksternal milik penyedia asli. Ketersediaan, kualitas, dan legalitas konten sepenuhnya berada di luar kendali kami.
+                </p>
+                <p class="text-xs">
+                    3. **Kebijakan Hak Cipta (DMCA)**: Kami sangat menghormati hak kekayaan intelektual orang lain. Jika Anda adalah pemegang hak cipta resmi (atau perwakilannya) dari salah satu saluran yang terdaftar di sini, dan ingin mengajukan permohonan penghapusan tautan, silakan hubungi kami untuk segera menghapus tautan streaming tersebut dari berkas lokal kami.
+                </p>
+                <p class="text-xs text-yellow-500/80 italic">
+                    Catatan: Dikarenakan ini adalah berkas yang dijalankan secara lokal/personal (offline), modifikasi tautan dapat dilakukan secara langsung pada source code oleh masing-masing pemilik.
+                </p>
+            </div>
+            <div class="p-4 bg-[#0b0f19] border-t border-gray-800 flex justify-end">
+                <button onclick="closeDisclaimerModal()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-4 py-2 rounded-lg font-semibold transition-colors">
+                    Saya Mengerti
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Toast Container -->
     <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-3 pointer-events-none"></div>
@@ -1136,6 +1318,115 @@ let hls = null;
 let dash = null;
 let isChecking = false;
 
+// Proxy Helpers
+function getProxyUrl() {
+    return localStorage.getItem('dev_tv_proxy') || '';
+}
+
+function applyProxy(url) {
+    const proxy = getProxyUrl();
+    if (proxy && url.startsWith('http') && !url.includes('dens.tv') && !url.includes('visionplus.id')) {
+        // Jangan proxy DensTV atau VisionPlus karena menggunakan mekanisme token khusus
+        if (proxy.includes('?url=')) {
+            return proxy + encodeURIComponent(url);
+        } else {
+            return proxy + url;
+        }
+    }
+    return url;
+}
+
+// Settings Modal Helpers
+function openSettingsModal() {
+    const modal = document.getElementById('settings-modal');
+    modal.classList.remove('opacity-0', 'pointer-events-none');
+    modal.querySelector('.transform').classList.remove('scale-95');
+    modal.querySelector('.transform').classList.add('scale-100');
+    document.getElementById('proxy-input').value = getProxyUrl();
+}
+
+function closeSettingsModal() {
+    const modal = document.getElementById('settings-modal');
+    modal.classList.add('opacity-0', 'pointer-events-none');
+    modal.querySelector('.transform').classList.remove('scale-100');
+    modal.querySelector('.transform').classList.add('scale-95');
+}
+
+function setQuickProxy(url) {
+    document.getElementById('proxy-input').value = url;
+}
+
+function saveSettings() {
+    const proxy = document.getElementById('proxy-input').value.trim();
+    localStorage.setItem('dev_tv_proxy', proxy);
+    closeSettingsModal();
+    showToast("Pengaturan Disimpan", proxy ? "CORS Proxy berhasil diaktifkan. Silakan coba putar ulang saluran." : "CORS Proxy dinonaktifkan", "info");
+    renderChannels(currentCategory);
+}
+
+// Favorites Helpers
+function getFavorites() {
+    const favs = localStorage.getItem('dev_tv_favorites');
+    return favs ? JSON.parse(favs) : [];
+}
+
+function toggleFavorite(channelName, e) {
+    if (e) e.stopPropagation();
+    let favs = getFavorites();
+    if (favs.includes(channelName)) {
+        favs = favs.filter(name => name !== channelName);
+        showToast("Favorit", `${channelName} dihapus dari favorit`, "info");
+    } else {
+        favs.push(channelName);
+        showToast("Favorit", `${channelName} ditambahkan ke favorit`, "info");
+    }
+    localStorage.setItem('dev_tv_favorites', JSON.stringify(favs));
+    renderChannels(currentCategory);
+}
+
+// Disclaimer Modal Helpers
+function openDisclaimerModal() {
+    const modal = document.getElementById('disclaimer-modal');
+    modal.classList.remove('opacity-0', 'pointer-events-none');
+    modal.querySelector('.transform').classList.remove('scale-95');
+    modal.querySelector('.transform').classList.add('scale-100');
+}
+
+function closeDisclaimerModal() {
+    const modal = document.getElementById('disclaimer-modal');
+    modal.classList.add('opacity-0', 'pointer-events-none');
+    modal.querySelector('.transform').classList.remove('scale-100');
+    modal.querySelector('.transform').classList.add('scale-95');
+}
+
+// Theater Mode Helper
+function toggleTheaterMode() {
+    document.body.classList.toggle('theater-mode');
+    const isTheater = document.body.classList.contains('theater-mode');
+    showToast("Mode Bioskop", isTheater ? "Mode bioskop diaktifkan" : "Mode bioskop dinonaktifkan", "info");
+}
+
+// Disable Right Click and Developer Tools
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    showToast("Proteksi", "Klik kanan dinonaktifkan untuk menjaga keamanan data.", "error");
+});
+
+document.addEventListener('keydown', function(e) {
+    if (
+        e.key === 'F12' ||
+        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i')) ||
+        (e.ctrlKey && e.shiftKey && (e.key === 'C' || e.key === 'c')) ||
+        (e.ctrlKey && e.shiftKey && (e.key === 'J' || e.key === 'j')) ||
+        (e.ctrlKey && (e.key === 'U' || e.key === 'u')) ||
+        (e.metaKey && e.altKey && (e.key === 'I' || e.key === 'i')) ||
+        (e.metaKey && (e.key === 'U' || e.key === 'u'))
+    ) {
+        e.preventDefault();
+        showToast("Proteksi", "Pemeriksaan elemen / Developer Tools dinonaktifkan.", "error");
+    }
+});
+
 // Custom Toast Notification (Replacing Alert)
 function showToast(title, message, type = 'info') {
     const container = document.getElementById('toast-container');
@@ -1144,12 +1435,12 @@ function showToast(title, message, type = 'info') {
     const borderColor = type === 'error' ? 'border-red-500/30' : 'border-blue-500/30';
     const bgColor = type === 'error' ? 'bg-red-500/10' : 'bg-[#1e293b]/90';
     
-    toast.className = `toast-enter ${bgColor} backdrop-blur-md border ${borderColor} text-white p-4 rounded-xl shadow-2xl flex items-start w-80 pointer-events-auto`;
+    toast.className = `toast-enter ${bgColor} backdrop-blur-md border ${borderColor} text-white p-4 rounded-xl shadow-2xl flex items-start w-80 pointer-events-auto z-50`;
     toast.innerHTML = `
         <i class="${icon} text-xl mt-0.5 mr-3 drop-shadow"></i>
-        <div class="flex-1">
-            <h4 class="font-semibold text-sm mb-0.5">${title}</h4>
-            <p class="text-xs text-gray-400 leading-relaxed">${message}</p>
+        <div class="flex-1 font-sans">
+            <h4 class="font-semibold text-sm mb-0.5 text-left">${title}</h4>
+            <p class="text-xs text-gray-400 leading-relaxed text-left">${message}</p>
         </div>
         <button onclick="this.parentElement.remove()" class="text-gray-500 hover:text-white ml-2">
             <i class="ri-close-line"></i>
@@ -1267,11 +1558,11 @@ function renderCategories() {
     list.innerHTML = '';
     mobileList.innerHTML = '';
 
-    const allCategories = ['All', ...Array.from(categories).sort()];
+    const allCategories = ['All', 'Favorit', ...Array.from(categories).sort()];
 
     allCategories.forEach(cat => {
-        const title = cat === 'All' ? 'Semua Saluran' : cat;
-        const icon = cat === 'All' ? 'ri-apps-2-line' : getCatIcon(cat);
+        const title = cat === 'All' ? 'Semua Saluran' : (cat === 'Favorit' ? 'Favorit' : cat);
+        const icon = cat === 'All' ? 'ri-apps-2-line' : (cat === 'Favorit' ? 'ri-star-line' : getCatIcon(cat));
         const isActive = currentCategory === cat;
         
         // Desktop
@@ -1316,14 +1607,24 @@ function renderChannels(category) {
     currentCategory = category;
     renderCategories();
     
-    let titleHTML = category === 'All' ? '<i class="ri-grid-fill text-blue-500 mr-2 text-xl"></i> Semua Saluran' : `<i class="${getCatIcon(category)} text-blue-500 mr-2 text-xl"></i> ${category}`;
+    let iconName = category === 'All' ? 'ri-grid-fill' : (category === 'Favorit' ? 'ri-star-fill text-yellow-400' : getCatIcon(category));
+    let titleText = category === 'All' ? 'Semua Saluran' : (category === 'Favorit' ? 'Saluran Favorit' : category);
+    let titleHTML = `<i class="${iconName} text-blue-500 mr-2 text-xl"></i> ${titleText}`;
     document.getElementById('current-category-title').innerHTML = titleHTML;
     
     const grid = document.getElementById('channel-grid');
     const emptyState = document.getElementById('empty-state');
     grid.innerHTML = '';
 
-    let filtered = category === 'All' ? channels : channels.filter(c => c.group === category);
+    let filtered;
+    if (category === 'All') {
+        filtered = channels;
+    } else if (category === 'Favorit') {
+        const favorites = getFavorites();
+        filtered = channels.filter(c => favorites.includes(c.name));
+    } else {
+        filtered = channels.filter(c => c.group === category);
+    }
     
     // Terapkan Pencarian
     if (searchQuery) {
@@ -1339,13 +1640,21 @@ function renderChannels(category) {
         grid.style.display = 'grid';
         emptyState.style.display = 'none';
         
+        const favorites = getFavorites();
+        
         filtered.forEach(channel => {
             const div = document.createElement('div');
             div.className = 'glass-card rounded-xl p-3 sm:p-4 flex flex-col items-center text-center relative group overflow-hidden';
             div.onclick = () => playStream(channel);
             
+            const isFav = favorites.includes(channel.name);
+            const favIcon = isFav ? 'ri-star-fill text-yellow-400' : 'ri-star-line text-gray-500 hover:text-yellow-400';
+            
             div.innerHTML = `
                 ${getBadgeHTML(channel.status, channel.id)}
+                <button onclick="toggleFavorite('${channel.name.replace(/'/g, "\\'")}', event)" class="absolute top-2 left-2 z-10 p-1.5 rounded-full bg-black/40 hover:bg-black/60 transition-colors backdrop-blur-sm shadow-md" title="Simpan Favorit">
+                    <i class="${favIcon} text-xs sm:text-sm"></i>
+                </button>
                 <div class="h-14 sm:h-16 w-full flex items-center justify-center mb-3 bg-[#0f172a]/50 rounded-lg p-2 group-hover:bg-[#0f172a] transition-colors">
                     <img src="${channel.logo}" alt="${channel.name}" class="max-h-full max-w-full object-contain drop-shadow-md" onerror="this.src='https://placehold.co/150x80/1e293b/a9b5ce?text=TV'">
                 </div>
@@ -1369,11 +1678,18 @@ async function checkAllStatusInView(manual = false) {
 
     if(manual) showToast("Mengecek Status", "Sedang memverifikasi koneksi channel...", "info");
 
-    const filtered = currentCategory === 'All' ? channels : channels.filter(c => c.group === currentCategory);
+    let filtered;
+    if (currentCategory === 'All') {
+        filtered = channels;
+    } else if (currentCategory === 'Favorit') {
+        const favorites = getFavorites();
+        filtered = channels.filter(c => favorites.includes(c.name));
+    } else {
+        filtered = channels.filter(c => c.group === currentCategory);
+    }
     
     for (let channel of filtered) {
         if(channel.status === 'Hanya VLC') continue;
-        // Jika auto-check (interval), skip yg sudah aktif untuk hemat resource. Jika manual, cek ulang.
         if(!manual && (channel.status === 'Aktif' || channel.status === 'Error')) continue;
         
         channel.status = 'Mengecek';
@@ -1382,7 +1698,8 @@ async function checkAllStatusInView(manual = false) {
         try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 4000); // 4 detik timeout
-            const response = await fetch(channel.url, { method: 'HEAD', cache: 'no-cache', signal: controller.signal });
+            const proxiedUrl = applyProxy(channel.url);
+            const response = await fetch(proxiedUrl, { method: 'HEAD', cache: 'no-cache', signal: controller.signal });
             clearTimeout(timeoutId);
 
             if(response.ok || response.type === 'opaque') {
@@ -1447,15 +1764,18 @@ function playStream(channel) {
         updateBadge(channel);
     }
 
-    if (channel.url.includes('.mpd')) {
+    // Terapkan CORS proxy pada URL stream
+    const proxiedUrl = applyProxy(channel.url);
+
+    if (proxiedUrl.includes('.mpd')) {
         dash = dashjs.MediaPlayer().create();
-        dash.initialize(video, channel.url, true);
+        dash.initialize(video, proxiedUrl, true);
         dash.on(dashjs.MediaPlayer.events.PLAYBACK_PLAYING, onPlaySuccess);
         dash.on(dashjs.MediaPlayer.events.ERROR, onPlayError);
-    } else if (channel.url.includes('.m3u8')) {
+    } else if (proxiedUrl.includes('.m3u8')) {
         if (Hls.isSupported()) {
             hls = new Hls({ debug: false, maxMaxBufferLength: 30 });
-            hls.loadSource(channel.url);
+            hls.loadSource(proxiedUrl);
             hls.attachMedia(video);
             hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(e => console.log("Autoplay dicegah")));
             hls.on(Hls.Events.ERROR, function (event, data) {
@@ -1466,13 +1786,13 @@ function playStream(channel) {
             });
             video.addEventListener('playing', onPlaySuccess);
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-            video.src = channel.url;
+            video.src = proxiedUrl;
             video.addEventListener('loadedmetadata', () => video.play());
             video.addEventListener('playing', onPlaySuccess);
             video.addEventListener('error', onPlayError);
         }
     } else {
-        video.src = channel.url;
+        video.src = proxiedUrl;
         video.play().catch(e => console.log("Autoplay dicegah"));
         video.addEventListener('playing', onPlaySuccess);
         video.addEventListener('error', onPlayError);
@@ -1488,7 +1808,29 @@ window.onload = () => {
     
     parseM3U(combinedData);
     
-    // Pengecekan otomatis setiap 30 detik (setInterval) telah dihapus sesuai permintaan
+    // Collapsible Sidebar Toggle Logic
+    const sidebar = document.querySelector('aside');
+    const sidebarToggle = document.getElementById('sidebar-toggle');
+    const sidebarToggleIcon = document.getElementById('sidebar-toggle-icon');
+    
+    if (sidebarToggle && sidebarToggleIcon) {
+        sidebarToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('sidebar-collapsed');
+            if (sidebar.classList.contains('sidebar-collapsed')) {
+                sidebarToggleIcon.className = 'ri-menu-unfold-line text-lg';
+                localStorage.setItem('sidebarCollapsed', 'true');
+            } else {
+                sidebarToggleIcon.className = 'ri-menu-fold-line text-lg';
+                localStorage.setItem('sidebarCollapsed', 'false');
+            }
+        });
+        
+        // Apply preference
+        if (localStorage.getItem('sidebarCollapsed') === 'true') {
+            sidebar.classList.add('sidebar-collapsed');
+            sidebarToggleIcon.className = 'ri-menu-unfold-line text-lg';
+        }
+    }
 };
 </script>
 </body>
